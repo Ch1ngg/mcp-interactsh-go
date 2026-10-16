@@ -1,7 +1,6 @@
 package interactsh
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -108,22 +107,19 @@ func RandomCorrelationID() (string, error) {
 
 const secretAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-// RandomSecretKey mirrors the reference bridge: 18 random bytes → base64 →
-// alphanumeric only → first 24 chars.
+// RandomSecretKey returns exactly 24 alphanumeric chars. The reference Node
+// bridge drew 18 random bytes through base64 + alphanumeric filtering + a
+// 24-char slice, which shrinks below 24 whenever '+', '/' or '=' show up;
+// drawing directly from the alphabet keeps the length deterministic while
+// staying in the exact same character class the interactsh server accepts.
 func RandomSecretKey() (string, error) {
-	buf := make([]byte, 18)
+	buf := make([]byte, 24)
 	if _, err := io.ReadFull(rand.Reader, buf); err != nil {
 		return "", err
 	}
-	b64 := base64.StdEncoding.EncodeToString(buf)
-	var out []byte
-	for _, c := range []byte(b64) {
-		if bytes.IndexByte([]byte(secretAlphabet), c) >= 0 {
-			out = append(out, c)
-			if len(out) == 24 {
-				break
-			}
-		}
+	out := make([]byte, 24)
+	for i, b := range buf {
+		out[i] = secretAlphabet[int(b)%len(secretAlphabet)]
 	}
 	return string(out), nil
 }
