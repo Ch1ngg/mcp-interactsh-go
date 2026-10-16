@@ -1,0 +1,7 @@
+bin/
+dist/
+coverage.out
+*.exe
+*.tar.gz
+*.zip
+.DS_Store
